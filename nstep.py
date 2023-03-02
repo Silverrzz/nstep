@@ -903,7 +903,7 @@ def git_init():
     template = get_template()
     if template["GIT"]["enabled"] == "false":
         log("Git is not enabled", "ERROR")
-        log("Run 'nstep git config enable true' to enable git", "ERROR")
+        log("Run 'nstep git config enabled true' to enable git", "ERROR")
         sys.exit()
 
     if os.path.exists(".git"):
@@ -1077,7 +1077,7 @@ if len(sys.argv) > 1:
                         sys.exit()
                 template["GIT"][sys.argv[3]] = sys.argv[4]
                 save_template(template)
-                log(f"Set {sys.argv[3]} to {sys.argv[4]}", "OK")
+                log(f"Set git {sys.argv[3]} to {sys.argv[4]}", "OK")
 
         elif sys.argv[2] == "remove":
             result = subprocess.run(["powershell.exe", "Remove-Item", "-Recurse", "-Force", ".git"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
