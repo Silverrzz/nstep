@@ -1,4 +1,10 @@
 projects/
 application-build-scripts/
 __pycache__/
+
+build/
+dist/
+
+nstep.spec
+
 nstep.exe

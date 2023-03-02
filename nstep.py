@@ -1052,10 +1052,11 @@ if len(sys.argv) > 1:
             config_json = json.loads(open(get_execution_dir() + "/config.json", "r").read())
             print(json.dumps(config_json[sys.argv[2]], indent=4))
         elif len(sys.argv) == 4:
+            setting = sys.argv[2].upper()
             config_json = json.loads(open(get_execution_dir() + "/config.json", "r").read())
-            config_json[sys.argv[2]] = sys.argv[3]
+            config_json[setting] = sys.argv[3]
             open(get_execution_dir() + "/config.json", "w").write(json.dumps(config_json, indent=4))
-            log(f"Set {sys.argv[2]} to {sys.argv[3]}", "OK")
+            log(f"Set {setting} to {sys.argv[3]}", "OK")
 
     elif sys.argv[1] == "git":
 
