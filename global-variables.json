@@ -1,0 +1,29 @@
+{
+    "DEFAULT_STEPS": ["SRC", "BUILD"],
+    "DEFAULT_BUILD_SCRIPT": "RUN{1-SOURCE,2-DESTINATION}:COPY >> $SOURCE/* >> $DESTINATION/#/*;",
+    "DEFAULT_TEMPLATE": {
+        "STEPS": [],
+        "SOURCE_STEP": "SRC",
+
+        "GIT": {
+            "enabled": "false",
+            "branch": "master",
+            "remote": "origin",
+            "repository": "git@github.com:username/repository.git"
+        }
+    },
+    "DEFAULT_STEP_CONFIG": {
+        "SOURCE": "__STEP_NAME__",
+        "STRUC": [
+            {
+                "__STEP_NAME__": {
+                    "STRUC": []
+                }
+            }
+        ],
+        "BUILD": "true",
+        "VOLATILE": "true",
+        "WATCH": "false"
+
+    }
+}
