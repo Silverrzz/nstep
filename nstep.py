@@ -246,6 +246,11 @@ def init():
 def init_new_project(template=None):
     create_dir(".nstep/")
     create_dir(".nstep/scripts")
+
+    f = open(".nstep/config.json", "w+")
+    f.write(json.dumps(global_variable("DEFAULT_CONFIG"), indent=4))
+    f.close()
+
     if template is None:
         default_template = global_variable("DEFAULT_TEMPLATE")
         default_steps = global_variable("DEFAULT_STEPS")
@@ -300,15 +305,15 @@ def build_step(step):
         log(f"Step {step} not found in template")
         sys.exit()
 
-    if os.path.exists(step):
+    if os.path.exists(get_step_directory(step)):
 
         if template[step]["BUILD"] == "true":
             source_step = template["SOURCE_STEP"]
-            if not os.path.exists(source_step):
+            if not os.path.exists(get_step_directory(source_step)):
                 log(f"{step.upper()} failed to build. It requires a complete build and assembly of {source_step.upper()}", "ERROR")
                 return 0
             script_name = f"_build_{step}.nstep-script"
-            parsed_script = parse_script(script_name, "RUN", [source_step, step])
+            parsed_script = parse_script(script_name, "RUN", [get_step_directory(source_step), get_step_directory(step), source_step, step])
             log(f"Building {step.upper()}", "INFO")
             execute_script(parsed_script, script_name)
         else:
@@ -332,8 +337,10 @@ def assemble_step(step):
             pass
 
     time.sleep(0.3)
+
+    create_dir(get_step_directory(step))
     
-    assemble_segment(template[step]["STRUC"], step, "")
+    assemble_segment(template[step]["STRUC"], step, get_step_directory(step) + "/")
 
 def assemble_all():
     template = get_template()
@@ -350,6 +357,10 @@ def assemble_segment(segment, step, path):
             assemble_segment(child, step, path + segment_name + "/")
         else:
             log(f"End node {path + segment_name}", "DEBUG")
+
+def get_step_directory(step):
+    template = get_template()
+    return template[step]["DIR"]
 
 def get_steps(template):
     return template["STEPS"]
@@ -539,9 +550,12 @@ def parse_script(script, func_name, args):
     parsed_commands = []
     for command in commands:
         for i, arg in enumerate(args):
-            variable_name = f"${arg_map[str(i+1)]}"
-            if variable_name in command:
-                command = command.replace(variable_name, arg)
+            try:
+                variable_name = f"${arg_map[str(i+1)]}"
+                if variable_name in command:
+                    command = command.replace(variable_name, arg)
+            except:
+                pass
         parsed_commands.append(command)
 
     log(f"Parsed commands: {parsed_commands}", "DEBUG")
@@ -816,6 +830,19 @@ def get_structure(json_struc, to_find):
 
 def disect_structure(template, path, command, in_json=None):
     # Split the path into a list of directories
+
+    if path == "":
+        if command == "remove":
+            template = []
+
+        elif command == "replace":
+            template = in_json
+
+        elif command == "add":
+            template.append(in_json)
+
+        return template
+    
     dirs = path.split("/")
 
     for d in dirs:
@@ -855,6 +882,9 @@ def remove_structure(template, path):
 
     final = {}
 
+    if path == "":
+        return final
+
     dirs = path.split("/")[::-1]
 
     for i, d in enumerate(dirs):
@@ -879,8 +909,12 @@ def remove_structure(template, path):
 def add_structure(template, path):
     new_dir = path.split("/")[-1]
     path = path[:-len(new_dir)]
-    path = path[:-1] if path[-1] == "/" else path
-    dirs = path.split("/")[::-1]
+    if path != "":
+        path = path[:-1] if path[-1] == "/" else path
+        print ("path", path)
+        dirs = path.split("/")[::-1]
+    else:
+        dirs = []
 
     final = disect_structure(template, path, "add", {new_dir: {"STRUC": []}})
 
@@ -936,6 +970,11 @@ def git_init():
         run_system_command(f"git checkout {branch}")
 
         log(f"Set up remote {repository} successfully", "OK")
+
+    f=open(".gitignore", "w+")
+    f.write("BUILD/")
+    f.close()
+
 
     log("Git configured successfully", "OK")
 
@@ -1005,9 +1044,12 @@ if len(sys.argv) > 1:
             duplicate_step(sys.argv[3], sys.argv[4])
 
     elif sys.argv[1] == "mkdir":
-        directory = sys.argv[2]
-        step = directory.split("/")[0]
-        create_dir(directory)
+        raw_path = sys.argv[2]
+        step = raw_path.split("/")[0]
+        directory = "/".join(raw_path.split("/")[1:])
+        step_dir = get_step_directory(step)
+        full_directory = step_dir + "/" + directory
+        create_dir(full_directory)
         log(f"Created directory {directory} in {step.upper()}", "OK")
         #add to template
         template = get_template()
@@ -1016,14 +1058,18 @@ if len(sys.argv) > 1:
         save_template(template)
 
     elif sys.argv[1] == "rmdir":
-        directory = sys.argv[2]
-        step = directory.split("/")[0]
+        raw_path = sys.argv[2]
+        step = raw_path.split("/")[0]
+        directory = "/".join(raw_path.split("/")[1:])
+        step_dir = get_step_directory(step)
+        full_directory = step_dir + "/" + directory
+
         #remove from template
         template = get_template()
         template[step]["STRUC"] = remove_structure(template[step]["STRUC"], directory)
         log(f"Removed directory {directory} from template", "OK")
         save_template(template)
-        shutil.rmtree(directory)
+        shutil.rmtree(full_directory)
         log(f"Removed directory {directory} in {step.upper()}", "OK")
 
     elif sys.argv[1] == "rndir":

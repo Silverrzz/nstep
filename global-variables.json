@@ -1,29 +1,32 @@
 {
     "DEFAULT_STEPS": ["SRC", "BUILD"],
-    "DEFAULT_BUILD_SCRIPT": "RUN{1-SOURCE,2-DESTINATION}:COPY >> $SOURCE/* >> $DESTINATION/#/*;",
+    "DEFAULT_BUILD_SCRIPT": "RUN{1-SOURCE,2-DESTINATION,3-SRC_NAME,4-DST_NAME}:COPY >> $SOURCE/* >> $DESTINATION/#/*;",
     "DEFAULT_TEMPLATE": {
         "STEPS": [],
         "SOURCE_STEP": "SRC",
 
         "GIT": {
             "enabled": "false",
-            "branch": "master",
+            "branch": "main",
             "remote": "origin",
             "repository": "git@github.com:username/repository.git"
         }
     },
     "DEFAULT_STEP_CONFIG": {
+        "DIR": "__STEP_NAME__",
         "SOURCE": "__STEP_NAME__",
-        "STRUC": [
-            {
-                "__STEP_NAME__": {
-                    "STRUC": []
-                }
-            }
-        ],
+        "STRUC": [],
         "BUILD": "true",
         "VOLATILE": "true",
         "WATCH": "false"
 
+    },
+    "DEFAULT_CONFIG": {
+        "BUILD": {
+            "host": "http://localhost:3000/",
+            "protocol": "http",
+            "domain": "localhost",
+            "port": 8000
+        }
     }
 }
