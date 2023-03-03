@@ -61,7 +61,45 @@ except:
         from copy import deepcopy
     except:
         print("Failed to install python modules, do you have python and pip installed?")
-        exit()       
+        exit()   
+
+try:
+    import paramiko
+except:
+    try:
+        os.system("pip install paramiko")
+        import paramiko
+    except:
+        print("Failed to install python modules, do you have python and pip installed?")
+        exit()
+
+class SSH_Client():
+    def __init__(self, host, port, username, password):
+        self.client = paramiko.SSHClient()
+        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.client.connect(host, port=port, username=username, password=password)
+
+    def execute(self, command):
+        stdin, stdout, stderr = self.client.exec_command(command)
+        return stdout.read().decode("utf-8")
+
+    def upload(self, local_path, remote_path):
+        sftp = self.client.open_sftp()
+        sftp.put(local_path, remote_path)
+
+    def download(self, remote_path, local_path):
+        sftp = self.client.open_sftp()
+        sftp.get(remote_path, local_path)
+
+    def close(self):
+        self.client.close()
+
+def connect_step_ssh(step):
+    ssh_details = get_template()[step]["REMOTE"]
+    if ssh_details["ssh_enabled"] == "false":
+        return None
+    ssh = SSH_Client(ssh_details["host"], ssh_details["port"], ssh_details["user"], ssh_details["pass"])
+    return ssh
 
 def get_execution_dir():
     for path in os.environ["PATH"].split(";"):
@@ -200,9 +238,56 @@ def log(message, t="INFO"):
     elif verbose > 1:
         print(f"{logColours.GRAY}[{hour_minute_second}] {logColours.GRAY}[DEBUG] {message}")
 
-def create_dir(dir_path):
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
+def create_dir(dir_path, step=None):
+    if step != None:
+        ssh = connect_step_ssh(step)
+        if ssh == None:
+            if not os.path.exists(dir_path):
+                os.mkdir(dir_path)
+        else:
+            response = ssh.execute(f"mkdir -p {dir_path}")
+            log(f"Creating directory {dir_path} on {step}", "DEBUG")
+    else:
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
+def remove_dir(dir_path, step=None):
+    if step != None:
+        ssh = connect_step_ssh(step)
+        if ssh == None:
+            if os.path.exists(dir_path):
+                shutil.rmtree(dir_path)
+        else:
+            response = ssh.execute(f"rm -rf {dir_path}")
+            log(f"Removing directory {dir_path} on {step}", "DEBUG")
+    else:
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
+
+def copy_file(file_path, dest_path, step=None):
+    if step != None:
+        ssh = connect_step_ssh(step)
+        if ssh == None:
+            shutil.copy(file_path, dest_path)
+        else:
+            response = ssh.upload(file_path, dest_path)
+            log(f"Copying {file_path} to {dest_path} on {step}", "DEBUG")
+    else:
+        shutil.copy(file_path, dest_path)
+
+def path_exists(path, step=None):
+    if step != None:
+        ssh = connect_step_ssh(step)
+        if ssh == None:
+            return os.path.exists(path)
+        else:
+            response = ssh.execute(f"ls {path}")
+            if response == "":
+                return False
+            else:
+                return True
+    else:
+        return os.path.exists(path)
 
 class NSTEP_FileObject:
     def __init__(self, file, local_dir=None):
@@ -305,11 +390,11 @@ def build_step(step):
         log(f"Step {step} not found in template")
         sys.exit()
 
-    if os.path.exists(get_step_directory(step)):
+    if path_exists(get_step_directory(step), step):
 
         if template[step]["BUILD"] == "true":
             source_step = template["SOURCE_STEP"]
-            if not os.path.exists(get_step_directory(source_step)):
+            if not path_exists(get_step_directory(source_step), source_step):
                 log(f"{step.upper()} failed to build. It requires a complete build and assembly of {source_step.upper()}", "ERROR")
                 return 0
             script_name = f"_build_{step}.nstep-script"
@@ -332,13 +417,13 @@ def assemble_step(step):
     #delete old directory
     if template[step]["VOLATILE"] == "true" and template[step]["BUILD"] == "true":
         try:
-            shutil.rmtree(step)
+            remove_dir(get_step_directory(step), step)
         except:
             pass
 
     time.sleep(0.3)
 
-    create_dir(get_step_directory(step))
+    create_dir(get_step_directory(step), step)
     
     assemble_segment(template[step]["STRUC"], step, get_step_directory(step) + "/")
 
@@ -351,7 +436,7 @@ def assemble_segment(segment, step, path):
     for item in segment:
         log(f"Creating {path + list(item.keys())[0]}", "DEBUG")
         segment_name = list(item.keys())[0]
-        create_dir(path + segment_name)
+        create_dir(path + segment_name, step)
         if "STRUC" in item[segment_name]:
             child = item[segment_name]["STRUC"]
             assemble_segment(child, step, path + segment_name + "/")
@@ -366,7 +451,11 @@ def get_steps(template):
     return template["STEPS"]
 
 def get_step_from_path(path):
-    return path.split("/")[0]
+    template = get_template()
+    steps = template["STEPS"]
+    for step in steps:
+        if path.startswith(template[step]["DIR"]):
+            return step
 
 def execute_script(script, script_name=None):
     log(f"Executing script {script_name}", "INFO")
@@ -394,13 +483,14 @@ def execute_script(script, script_name=None):
             args = command.split(" >> ")[1:]
 
             def __func(i, o):
+                dest_step = get_step_from_path(o)
                 try:
-                    shutil.copy(i, o)
+                    copy_file(i, o, dest_step)
                     log(f"Copied {i} to {o}", "DEBUG")
                 except Exception:
                     try:
-                        os.makedirs(os.path.dirname(o))
-                        shutil.copy(i, o)
+                        create_dir(o, dest_step)
+                        copy_file(i, o, dest_step)
                         log(f"Copied {i} to {o}", "DEBUG")
                     except Exception as e:
                         log(f"Failed to copy {i} to {o}", "ERROR")
@@ -1048,7 +1138,7 @@ if len(sys.argv) > 1:
         directory = "/".join(raw_path.split("/")[1:])
         step_dir = get_step_directory(step)
         full_directory = step_dir + "/" + directory
-        create_dir(full_directory)
+        create_dir(full_directory, step)
         log(f"Created directory {directory} in {step.upper()}", "OK")
         #add to template
         template = get_template()
@@ -1068,7 +1158,7 @@ if len(sys.argv) > 1:
         template[step]["STRUC"] = remove_structure(template[step]["STRUC"], directory)
         log(f"Removed directory {directory} from template", "OK")
         save_template(template)
-        shutil.rmtree(full_directory)
+        remove_dir(full_directory, step)
         log(f"Removed directory {directory} in {step.upper()}", "OK")
 
     elif sys.argv[1] == "rndir":
