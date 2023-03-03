@@ -1,5 +1,6 @@
 cd C:/nstep/
 del nstep.exe
+pip install PyInstaller
 py -m PyInstaller nstep.py --onefile
 cd C:/nstep/
 rmdir /s /q build

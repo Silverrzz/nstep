@@ -763,7 +763,6 @@ def duplicate_step(step, new_step):
             #duplicate template
             template["STEPS"].append(new_step)
             template[new_step] = deepcopy(template[step])
-            template[new_step]["STRUC"][0] = {new_step: template[new_step]["STRUC"][0][step]}
 
             save_template(template)
 

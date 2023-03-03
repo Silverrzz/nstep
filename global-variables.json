@@ -13,6 +13,7 @@
         }
     },
     "DEFAULT_STEP_CONFIG": {
+        "REMOTE": "",
         "DIR": "__STEP_NAME__",
         "SOURCE": "__STEP_NAME__",
         "STRUC": [],
@@ -23,10 +24,10 @@
     },
     "DEFAULT_CONFIG": {
         "BUILD": {
-            "host": "http://localhost:3000/",
+            "host": "http://localhost:80/",
             "protocol": "http",
             "domain": "localhost",
-            "port": 8000
+            "port": 80
         }
     }
 }
