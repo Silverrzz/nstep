@@ -248,7 +248,7 @@ def create_dir(dir_path, step=None):
                 os.mkdir(dir_path)
         else:
             response = ssh.execute(f"mkdir -p {dir_path}")
-            log(f"Creating directory {dir_path} on {step}", "DEBUG")
+            log(f"Creating directory {dir_path} on {step} | {response}", "DEBUG")
     else:
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
@@ -261,7 +261,7 @@ def remove_dir(dir_path, step=None):
                 shutil.rmtree(dir_path)
         else:
             response = ssh.execute(f"rm -rf {dir_path}")
-            log(f"Removing directory {dir_path} on {step}", "DEBUG")
+            log(f"Removing directory {dir_path} on {step} | {response}", "DEBUG")
     else:
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
@@ -273,7 +273,7 @@ def copy_file(file_path, dest_path, step=None):
             shutil.copy(file_path, dest_path)
         else:
             response = ssh.upload(file_path, dest_path)
-            log(f"Copying {file_path} to {dest_path} on {step}", "DEBUG")
+            log(f"Copying {file_path} to {dest_path} on {step} | {response}", "DEBUG")
     else:
         shutil.copy(file_path, dest_path)
 
