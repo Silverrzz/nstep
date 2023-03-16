@@ -7,71 +7,70 @@ try:
     import json
 except:
     try:
-        os.system("pip install json")
+        os.system("py -3 -m pip install json")
         import json
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()
 
 try:
     import threading
 except:
     try:
-        os.system("pip install threading")
+        os.system("py -3 -m pip install threading")
         import threading
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()
 
 try:
     import subprocess
 except:
     try:
-        os.system("pip install subprocess")
+        os.system("py -3 -m pip install subprocess")
         import subprocess
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()
 
 try:
     import pickle
 except:
     try:
-        os.system("pip install pickle")
+        os.system("py -3 -m pip install pickle")
         import pickle
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()
 
 try:
     import shutil
 except:
     try:
-        os.system("pip install shutil")
+        os.system("py -3 -m pip install shutil")
         import shutil
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()
 
 try:
     from copy import deepcopy
 except:
     try:
-        os.system("pip install copy")
+        os.system("py -3 -m pip install copy")
         from copy import deepcopy
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
+        print("Failed to install python modules, do you have python and py -3 -m pip installed?")
         exit()   
 
 try:
     from fabric import Connection
 except:
     try:
-        os.system("pip install fabric")
+        os.system("py -3 -m pip install fabric")
         from fabric import Connection
     except:
-        print("Failed to install python modules, do you have python and pip installed?")
-        exit()
+        print("Failed to import paramiko, continuing without SSH support")
 
 class SSH_Client():
     def __init__(self, host, port, username, password):
