@@ -267,6 +267,36 @@ def remove_dir(dir_path, step=None):
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)
 
+def delete_contents(dir_path, step=None):
+    if step != None:
+        ssh = connect_step_ssh(step)
+        if ssh == None:
+            # If we're not able to connect via SSH, use local file system operations
+            for root, dirs, files in os.walk(dir_path, topdown=False):
+                for name in files:
+                    file_path = os.path.join(root, name)
+                    os.remove(file_path)
+                for name in dirs:
+                    dir_path = os.path.join(root, name)
+                    os.rmdir(dir_path)
+        else:
+            # Use SSH to execute remote commands
+            response = ssh.execute(f"find {dir_path} -mindepth 1 -delete")
+            log(f"Deleting contents of {dir_path} on {step} | {response}", "DEBUG")
+    else:
+        # Use local file system operations
+        for root, dirs, files in os.walk(dir_path, topdown=False):
+            for name in files:
+                file_path = os.path.join(root, name)
+                os.remove(file_path)
+            for name in dirs:
+                dir_path = os.path.join(root, name)
+                os.rmdir(dir_path)
+
+        
+
+
+
 def copy_file(file_path, dest_path, step=None):
     if step != None:
         ssh = connect_step_ssh(step)
@@ -420,7 +450,7 @@ def assemble_step(step):
     #delete old directory
     if template[step]["VOLATILE"] == "true" and template[step]["BUILD"] == "true":
         try:
-            remove_dir(get_step_directory(step), step)
+            delete_contents(get_step_directory(step), step)
         except:
             pass
 
