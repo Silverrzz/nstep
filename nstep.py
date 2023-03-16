@@ -70,7 +70,7 @@ except:
         os.system("py -3 -m pip install fabric")
         from fabric import Connection
     except:
-        print("Failed to import paramiko, continuing without SSH support")
+        print("Failed to import fabric, continuing without SSH support")
 
 class SSH_Client():
     def __init__(self, host, port, username, password):
