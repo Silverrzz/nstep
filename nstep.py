@@ -89,12 +89,12 @@ class SSH_Client():
 
     def upload(self, local_path, remote_path):
         result = self.connection.put(local_path, remote_path)
-        return result
+        return result.stdout.strip()
 
 
     def download(self, remote_path, local_path):
         result = self.connection.get(remote_path, local_path)
-        return result
+        return result.stdout.strip()
 
     def close(self):
         self.connection.close()
