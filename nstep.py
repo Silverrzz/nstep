@@ -64,35 +64,38 @@ except:
         exit()   
 
 try:
-    import paramiko
+    from fabric import Connection
 except:
     try:
-        os.system("pip install paramiko")
-        import paramiko
+        os.system("pip install fabric")
+        from fabric import Connection
     except:
         print("Failed to install python modules, do you have python and pip installed?")
         exit()
 
 class SSH_Client():
     def __init__(self, host, port, username, password):
-        self.client = paramiko.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.client.connect(host, port=port, username=username, password=password)
+        self.connection = Connection(
+            host=host,
+            user=username,
+            port=port,
+            connect_kwargs={
+                "password": password
+            }
+        )
 
     def execute(self, command):
-        stdin, stdout, stderr = self.client.exec_command(command)
-        return stdout.read().decode("utf-8")
+        result = self.connection.run(command)
+        return result.stdout.strip()
 
     def upload(self, local_path, remote_path):
-        sftp = self.client.open_sftp()
-        sftp.put(local_path, remote_path)
+        self.connection.put(local_path, remote_path)
 
     def download(self, remote_path, local_path):
-        sftp = self.client.open_sftp()
-        sftp.get(remote_path, local_path)
+        self.connection.get(remote_path, local_path)
 
     def close(self):
-        self.client.close()
+        self.connection.close()
 
 def connect_step_ssh(step):
     ssh_details = get_template()[step]["REMOTE"]
